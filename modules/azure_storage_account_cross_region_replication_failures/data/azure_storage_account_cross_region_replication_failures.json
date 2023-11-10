@@ -1,0 +1,134 @@
+{
+  "name": "azure_storage_account_cross_region_replication_failures",
+  "description": "This incident type involves failures related to cross-region replication of data in an Azure storage account. The issue arises when the replication settings are not working as expected due to various reasons such as region limitations, feature conflicts, storage account type, and access tier limitations. The incident requires troubleshooting and resolution of the underlying issue to ensure proper replication of data across different regions.",
+  "params": [
+    {
+      "name": "TARGET_STORAGE_ACCOUNT_NAME",
+      "value": ""
+    },
+    {
+      "name": "TARGET_RESOURCE_GROUP",
+      "value": ""
+    },
+    {
+      "name": "TARGET_STORAGE_ACCOUNT_REGION",
+      "value": ""
+    },
+    {
+      "name": "RESOURCE_GROUP_NAME",
+      "value": ""
+    },
+    {
+      "name": "REGION_NAME",
+      "value": ""
+    },
+    {
+      "name": "STORAGE_ACCOUNT_NAME",
+      "value": ""
+    },
+    {
+      "name": "HOST_NAME",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Azure Storage Account Cross-Region Replication Failures\nThis incident type involves failures related to cross-region replication of data in an Azure storage account. The issue arises when the replication settings are not working as expected due to various reasons such as region limitations, feature conflicts, storage account type, and access tier limitations. The incident requires troubleshooting and resolution of the underlying issue to ensure proper replication of data across different regions."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## List all the storage accounts in the selected subscription"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account list --resource-group ${RESOURCE_GROUP_NAME}`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get the replication properties of a specific storage account"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account show --name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME} --expand geoReplicationStats`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the storage account is in a region that supports the desired replication settings"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_check_storage_replication($REGION_NAME)"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get the paired region name for the current storage account region"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az account list-locations --query \"[?name == '${REGION_NAME}'].metadata.pairedRegion[0].name\" --output tsv`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the storage account type supports the desired replication settings"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account show --name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME} --query 'kind'`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the access tier supports the desired replication settings"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "(host | host_name=$HOST_NAME) union (pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE) | `az storage account show --name ${STORAGE_ACCOUNT_NAME} --resource-group ${RESOURCE_GROUP_NAME} --query 'accessTier'`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Replicate the storage account to another region"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "host | host_name=$HOST_NAME | invoke_storage_replication($TARGET_STORAGE_ACCOUNT_NAME, $TARGET_RESOURCE_GROUP, $TARGET_STORAGE_ACCOUNT_REGION, $RESOURCE_GROUP_NAME, $STORAGE_ACCOUNT_NAME)"
+    }
+  ]
+}
